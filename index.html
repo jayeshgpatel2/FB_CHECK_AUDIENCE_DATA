@@ -11,6 +11,7 @@
     .ACTIVE { color: green; font-weight: bold; }
     .IDLE { color: orange; font-weight: bold; }
     .ERROR { color: red; font-weight: bold; }
+    .details { font-size: 12px; color: #555; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -50,16 +51,18 @@ async function loadData() {
     tbody.innerHTML = "";
 
     items.forEach(a => {
-      const row = `
+      tbody.innerHTML += `
         <tr>
-          <td>${a.name}</td>
+          <td>
+            ${a.name}
+            <div class="details">${a.explanation}</div>
+          </td>
           <td class="${a.status}">${a.status}</td>
           <td>${a.reason}</td>
           <td>${a.size ?? "-"}</td>
-          <td>${a.days_since_fb_update}</td>
+          <td>${a.days_since_fb_update ?? "-"}</td>
         </tr>
       `;
-      tbody.innerHTML += row;
     });
 
   } catch (err) {
