@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FB Audience Health Monitor</title>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f5f5; }
+    .ACTIVE { color: green; font-weight: bold; }
+    .IDLE { color: orange; font-weight: bold; }
+    .ERROR { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>Facebook Audience Health Dashboard</h2>
+<p>Data refreshed by AWS Lambda → stored in DynamoDB → displayed here.</p>
+
+<button onclick="loadData()">Refresh</button>
+
+<table id="audienceTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+      <th>Reason</th>
+      <th>Size</th>
+      <th>Days Since Update</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="5">Loading...</td></tr>
+  </tbody>
+</table>
+
+<script>
+const API_URL = "https://YOUR-API.execute-api.ap-south-1.amazonaws.com/audiences";
+
+async function loadData() {
+  const tbody = document.querySelector("#audienceTable tbody");
+  tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+  try {
+    const res = await fetch(API_URL);
+    const json = await res.json();
+    const items = json.items;
+
+    tbody.innerHTML = "";
+
+    items.forEach(a => {
+      const row = `
+        <tr>
+          <td>${a.name}</td>
+          <td class="${a.status}">${a.status}</td>
+          <td>${a.reason}</td>
+          <td>${a.size ?? "-"}</td>
+          <td>${a.days_since_fb_update}</td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
+
+  } catch (err) {
+    tbody.innerHTML = "<tr><td colspan='5'>Error loading data</td></tr>";
+  }
+}
+
+loadData();
+</script>
+
+</body>
+</html>
