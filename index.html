@@ -1,77 +1,563 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>FB Audience Health Monitor</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FB Audience Health Monitor</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f5f5f5; }
-    .ACTIVE { color: green; font-weight: bold; }
-    .IDLE { color: orange; font-weight: bold; }
-    .ERROR { color: red; font-weight: bold; }
-    .details { font-size: 12px; color: #555; margin-top: 5px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    h1 {
+      color: #1877f2;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      background: #1877f2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #166fe5;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .filter-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    select, input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    input[type="search"] {
+      width: 200px;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .stat-card {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #1877f2;
+    }
+    
+    .stat-card.error { border-color: #dc3545; }
+    .stat-card.idle { border-color: #ffc107; }
+    .stat-card.active { border-color: #28a745; }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    .loading-bar {
+      height: 3px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      display: none;
+    }
+    
+    .loading-bar.active {
+      display: block;
+    }
+    
+    .loading-bar::after {
+      content: '';
+      display: block;
+      height: 100%;
+      background: #1877f2;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      background: #f8f9fa;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #dee2e6;
+      position: sticky;
+      top: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    th:hover {
+      background: #e9ecef;
+    }
+    
+    th.sortable::after {
+      content: ' ⇅';
+      color: #ccc;
+    }
+    
+    th.sorted-asc::after {
+      content: ' ↑';
+      color: #1877f2;
+    }
+    
+    th.sorted-desc::after {
+      content: ' ↓';
+      color: #1877f2;
+    }
+    
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .ACTIVE {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .IDLE {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .ERROR {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .explanation {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+    
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #dc3545;
+    }
+    
+    .refresh-info {
+      font-size: 12px;
+      color: #666;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    
+    .auto-refresh input[type="checkbox"] {
+      width: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .container { padding: 15px; }
+      h1 { font-size: 22px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .controls { flex-direction: column; width: 100%; }
+      .controls button, .controls select, .controls input { width: 100%; }
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>🎯 Facebook Audience Health</h1>
+        <div class="refresh-info" id="refreshInfo">Loading...</div>
+      </div>
+      <div class="controls">
+        <div class="filter-group">
+          <select id="statusFilter" onchange="filterTable()">
+            <option value="">All Statuses</option>
+            <option value="ERROR">Errors Only</option>
+            <option value="IDLE">Idle Only</option>
+            <option value="ACTIVE">Active Only</option>
+          </select>
+          <input type="search" id="searchBox" placeholder="Search audiences..." oninput="filterTable()">
+        </div>
+        <div class="auto-refresh">
+          <input type="checkbox" id="autoRefreshCheck" onchange="toggleAutoRefresh()">
+          <label for="autoRefreshCheck">Auto-refresh</label>
+        </div>
+        <button onclick="loadData()" id="refreshBtn">🔄 Refresh</button>
+        <button onclick="forceRefresh()" id="forceRefreshBtn">⚡ Force Update</button>
+      </div>
+    </header>
 
-<h2>Facebook Audience Health Dashboard</h2>
-<p>Data refreshed by AWS Lambda → stored in DynamoDB → displayed here.</p>
+    <div class="loading-bar" id="loadingBar"></div>
+    <div id="errorMessage"></div>
 
-<button onclick="loadData()">Refresh</button>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Audiences</div>
+        <div class="stat-value" id="totalCount">-</div>
+      </div>
+      <div class="stat-card active">
+        <div class="stat-label">Active</div>
+        <div class="stat-value" id="activeCount">-</div>
+      </div>
+      <div class="stat-card idle">
+        <div class="stat-label">Idle</div>
+        <div class="stat-value" id="idleCount">-</div>
+      </div>
+      <div class="stat-card error">
+        <div class="stat-label">Errors</div>
+        <div class="stat-value" id="errorCount">-</div>
+      </div>
+    </div>
 
-<table id="audienceTable">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Status</th>
-      <th>Reason</th>
-      <th>Size</th>
-      <th>Days Since Update</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td colspan="5">Loading...</td></tr>
-  </tbody>
-</table>
+    <div class="table-container">
+      <table id="audienceTable">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTable('name')">Audience Name</th>
+            <th class="sortable" onclick="sortTable('status')">Status</th>
+            <th class="sortable" onclick="sortTable('reason')">Reason</th>
+            <th class="sortable" onclick="sortTable('size_lower')">Size</th>
+            <th class="sortable" onclick="sortTable('days_since_fb_update')">Last Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="no-data">Loading data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-<script>
-const API_URL = "https://h8lw9x6z4g.execute-api.ap-south-1.amazonaws.com/audiences";
+  <script>
+    const API_URL = "https://h8lw9x6z4g.execute-api.ap-south-1.amazonaws.com/audiences";
+    
+    let allData = [];
+    let currentSort = { column: null, direction: 'asc' };
+    let autoRefreshInterval = null;
 
-async function loadData() {
-  const tbody = document.querySelector("#audienceTable tbody");
-  tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+    // Load data from API
+    async function loadData() {
+      const tbody = document.querySelector("#audienceTable tbody");
+      const loadingBar = document.getElementById("loadingBar");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const errorDiv = document.getElementById("errorMessage");
+      
+      loadingBar.classList.add("active");
+      refreshBtn.disabled = true;
+      errorDiv.innerHTML = "";
+      
+      try {
+        const res = await fetch(API_URL);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const json = await res.json();
+        allData = json.items || [];
+        
+        // Update stats
+        updateStats(json);
+        
+        // Update refresh info
+        updateRefreshInfo(json);
+        
+        // Display data
+        filterTable();
+        
+      } catch (err) {
+        console.error("Error loading data:", err);
+        errorDiv.innerHTML = `<div class="error-message">⚠️ Error loading data: ${err.message}</div>`;
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">Failed to load data. Please try again.</td></tr>';
+      } finally {
+        loadingBar.classList.remove("active");
+        refreshBtn.disabled = false;
+      }
+    }
 
-  try {
-    const res = await fetch(API_URL);
-    const json = await res.json();
-    const items = json.items;
+    // Force refresh from Facebook
+    async function forceRefresh() {
+      const btn = document.getElementById("forceRefreshBtn");
+      const loadingBar = document.getElementById("loadingBar");
+      
+      if (!confirm("This will fetch fresh data from Facebook. Continue?")) {
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.textContent = "⏳ Updating...";
+      loadingBar.classList.add("active");
+      
+      try {
+        const res = await fetch(API_URL, { method: 'POST' });
+        const json = await res.json();
+        
+        alert(`✅ Updated ${json.updated} audiences from Facebook!`);
+        
+        // Reload data
+        await loadData();
+        
+      } catch (err) {
+        alert(`❌ Error: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "⚡ Force Update";
+        loadingBar.classList.remove("active");
+      }
+    }
 
-    tbody.innerHTML = "";
+    // Update statistics
+    function updateStats(json) {
+      const items = json.items || [];
+      
+      document.getElementById("totalCount").textContent = items.length;
+      document.getElementById("activeCount").textContent = items.filter(a => a.status === "ACTIVE").length;
+      document.getElementById("idleCount").textContent = items.filter(a => a.status === "IDLE").length;
+      document.getElementById("errorCount").textContent = items.filter(a => a.status === "ERROR").length;
+    }
 
-    items.forEach(a => {
-      tbody.innerHTML += `
+    // Update refresh info
+    function updateRefreshInfo(json) {
+      const info = document.getElementById("refreshInfo");
+      const age = json.data_age_minutes || 0;
+      
+      let text = `Last updated: `;
+      if (age < 1) {
+        text += "Just now";
+      } else if (age < 60) {
+        text += `${Math.round(age)} min ago`;
+      } else {
+        text += `${Math.round(age / 60)} hours ago`;
+      }
+      
+      if (json.needs_refresh) {
+        text += " ⚠️ (stale)";
+      }
+      
+      info.textContent = text;
+    }
+
+    // Filter and display table
+    function filterTable() {
+      const statusFilter = document.getElementById("statusFilter").value;
+      const searchText = document.getElementById("searchBox").value.toLowerCase();
+      const tbody = document.querySelector("#audienceTable tbody");
+      
+      let filtered = allData;
+      
+      // Apply status filter
+      if (statusFilter) {
+        filtered = filtered.filter(a => a.status === statusFilter);
+      }
+      
+      // Apply search filter
+      if (searchText) {
+        filtered = filtered.filter(a => 
+          (a.name || "").toLowerCase().includes(searchText) ||
+          (a.explanation || "").toLowerCase().includes(searchText)
+        );
+      }
+      
+      // Apply current sort
+      if (currentSort.column) {
+        filtered = sortData(filtered, currentSort.column, currentSort.direction);
+      }
+      
+      // Display
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No audiences match your filters</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filtered.map(a => `
         <tr>
           <td>
-            ${a.name}
-            <div class="details">${a.explanation}</div>
+            <strong>${escapeHtml(a.name)}</strong>
+            <div class="explanation">${escapeHtml(a.explanation)}</div>
           </td>
-          <td class="${a.status}">${a.status}</td>
-          <td>${a.reason}</td>
-          <td>${a.size ?? "-"}</td>
-          <td>${a.days_since_fb_update ?? "-"}</td>
+          <td><span class="status-badge ${a.status}">${a.status}</span></td>
+          <td>${escapeHtml(a.reason)}</td>
+          <td>${escapeHtml(a.size || "-")}</td>
+          <td>${a.days_since_fb_update !== null && a.days_since_fb_update !== undefined 
+            ? `${a.days_since_fb_update} days ago` 
+            : "-"}</td>
         </tr>
-      `;
-    });
+      `).join("");
+    }
 
-  } catch (err) {
-    tbody.innerHTML = "<tr><td colspan='5'>Error loading data</td></tr>";
-  }
-}
+    // Sort table
+    function sortTable(column) {
+      // Toggle direction if same column
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+      }
+      
+      // Update header visuals
+      document.querySelectorAll('th').forEach(th => {
+        th.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      
+      const header = event.target;
+      header.classList.add(`sorted-${currentSort.direction}`);
+      
+      // Re-filter (which will apply sort)
+      filterTable();
+    }
 
-loadData();
-</script>
+    // Sort data array
+    function sortData(data, column, direction) {
+      return [...data].sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+        
+        // Handle null/undefined
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        
+        // Compare
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = (bVal || "").toLowerCase();
+        }
+        
+        if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
 
+    // Toggle auto-refresh
+    function toggleAutoRefresh() {
+      const checked = document.getElementById("autoRefreshCheck").checked;
+      
+      if (checked) {
+        autoRefreshInterval = setInterval(loadData, 60000); // Every 60 seconds
+        console.log("Auto-refresh enabled (60s)");
+      } else {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+        }
+        console.log("Auto-refresh disabled");
+      }
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+
+    // Initial load
+    loadData();
+  </script>
 </body>
 </html>
